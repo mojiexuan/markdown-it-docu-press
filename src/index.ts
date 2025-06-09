@@ -40,7 +40,8 @@ import { spoiler as markdownitspoiler } from "@mdit/plugin-spoiler";
 import { tasklist as markdownittasklist } from "@mdit/plugin-tasklist";
 import apiDocuPlugin from "./apidoc.plugin";
 import chartPlugin from "./chart.plugin";
-import type { ConfigPage,MarkdownItContainerTokenType } from "./types";
+import type { ConfigPage, MarkdownItContainerTokenType } from "./types";
+import nunjucks from "nunjucks";
 
 /**
  * DocuPress静态站点生成器
@@ -256,7 +257,7 @@ class DocuPress {
    * @param text Markdown文本
    * @returns
    */
-  parseMd(text: string, config?: ConfigPage) {
+  async parseMd(text: string, config?: ConfigPage) {
     if (config) {
       config = { ...this.#config, ...config };
     } else {
@@ -267,9 +268,26 @@ class DocuPress {
     }</h1>\n\n${text}\n\n<footer class="article-footer"><div class="article-info"></div><nav></nav></footer></article><div class="article-outline-content"><div class="article-outline-title">${
       config.outline?.label
     }</div>\n\n[toc]\n\n</div>`;
-    return this.#md?.renderAsync(text);
+    return await this.#md?.renderAsync(text);
   }
 
+  /**
+   * 渲染模版
+   * @returns HTML串
+   */
+  renderTemplate(template: string, config?: ConfigPage) {
+    if (config) {
+      config = { ...this.#config, ...config };
+    } else {
+      config = this.#config;
+    }
+    nunjucks.renderString(template,config);
+  }
+
+  /**
+   * 获取实例
+   * @param config 全局配置
+   */
   static getInstance(config?: ConfigPage) {
     if (!DocuPress.instance) {
       DocuPress.instance = new DocuPress(config);
