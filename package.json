@@ -14,7 +14,11 @@
     "markdown-it-plugin",
     "markdown"
   ],
-  "homepage": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mojiexuan/markdown-it-docu-press.git"
+  },
+  "homepage": "https://doc.chenjiabao.com",
   "exports": {
     ".": {
       "import": "./dist/esm/index.js",
