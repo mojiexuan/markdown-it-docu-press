@@ -43,13 +43,184 @@ import chartPlugin from "./chart.plugin";
 import type { ConfigPage, MarkdownItContainerTokenType } from "./types";
 import nunjucks from "nunjucks";
 
+const alertTitleMap: Record<string, string> = {
+  info: "信息",
+  note: "注",
+  warning: "警告",
+  tip: "提示",
+  danger: "危险",
+  details: "详情",
+  caution: "危险",
+  important: "重要",
+};
+/**
+ * 添加自定义容器
+ */
+const addCustomContainer = (
+  md: MarkdownIt,
+  container: { name: string; title: string }[]
+) => {
+  container.forEach((item) => {
+    md.use(markdownitcontainer, item.name, {
+      render: function (tokens: MarkdownItContainerTokenType[], idx: number) {
+        const m = tokens[idx].info.split(" ");
+        if (tokens[idx].nesting === 1) {
+          return `<div class="custom-container custom-container-${
+            item.name
+          }"><div class="custom-container-title">${
+            m.length > 2 ? md.utils.escapeHtml(m[2]) : item.title
+          }</div>\n`;
+        } else {
+          return "</div>\n";
+        }
+      },
+    });
+  });
+};
+// 代码行高亮
+const codeHighlightedTransformer: ShikiTransformer = {
+  name: "codeHighlightedTransformer",
+  code(node) {
+    if (node.children.length > 0) {
+      if (
+        (
+          node.children[node.children.length - 1] as {
+            children: { type: string; value: string }[];
+          }
+        ).children.length === 0
+      ) {
+        node.children.pop();
+      }
+    }
+  },
+};
+const md = MarkdownItAsync({
+  html: true, // 可以识别html
+  xhtmlOut: true,
+  breaks: true, // 回车换行
+  langPrefix: "language-",
+  linkify: true, // 自动检测链接文本
+  typographer: true, // 优化排版，标点
+  quotes: "“”‘’",
+  async highlight(code, lang) {
+    const html = await codeToHtml(code, {
+      lang: lang,
+      themes: {
+        dark: "min-dark",
+        light: "min-light",
+      },
+      defaultColor: false,
+      transformers: [
+        codeHighlightedTransformer,
+        transformerNotationDiff(),
+        transformerNotationHighlight(),
+        transformerNotationWordHighlight(),
+        transformerNotationFocus(),
+        transformerNotationErrorLevel(),
+        transformerMetaHighlight(),
+        transformerRenderWhitespace(),
+        transformerMetaWordHighlight(),
+        transformerRemoveNotationEscape(),
+      ],
+    });
+    return html;
+  },
+})
+  .use(markdownitsub) // 下标
+  .use(markdownitalert, {
+    deep: true,
+    titleRender: (tokens, idx) => {
+      const token = tokens[idx];
+      const content = token.content.trim();
+      return `<div class="markdown-alert-title">${
+        alertTitleMap[content] || content
+      }</div>`;
+    },
+  }) // GFM 风格的警告
+  .use(markdownitsup) // 上标
+  .use(markdownitfootnote) // 脚注
+  .use(markdownitdeflist) // 定义列表
+  .use(markdownitabbr) // 缩写
+  .use(markdownitemoji) // 表情
+  .use(markdownitins) // 插入
+  .use(markdownitmark) // 标记
+  .use(markdownitfigure) // 标题图片
+  .use(markdownitanchor, {
+    permalink: markdownitanchor.permalink.headerLink({
+      safariReaderFix: true,
+      class: "header-anchor",
+    }),
+  }) // 标题锚点
+  .use(markdownitImgLazyload) // 图片懒加载
+  .use(imgSize) // 新格式 图片尺寸
+  .use(obsidianImgSize) // Obsidian 格式 图片尺寸
+  .use(markdownitkatex) // 公式
+  .use(markdownitplantuml) // uml
+  .use(markdownitruby) // ruby拼音
+  .use(markdownitspoiler) // 隐藏内容
+  .use(markdownittasklist) // 任务列表
+  .use(markdownittocdoneright, {
+    containerClass: "article-outline-of-contents",
+    linkClass: "article-outline-link",
+  }) // 目录
+  .use(markdownitattrs, {
+    leftDelimiter: "{",
+    rightDelimiter: "}",
+    allowedAttributes: ["id", "class", "style", "data-*", "title", "target"], // 为空数组时支持所有属性，当然这是不安全的
+  }) // 属性{}
+  .use(apiDocuPlugin) // 接口文档
+  .use(chartPlugin); // 图表
+
+// 添加自定义容器
+addCustomContainer(md, [
+  {
+    name: "info",
+    title: "信息",
+  },
+  {
+    name: "tip",
+    title: "提示",
+  },
+  {
+    name: "warning",
+    title: "警告",
+  },
+  {
+    name: "danger",
+    title: "危险",
+  },
+]);
+
+md.use(markdownitcontainer, "details", {
+  render: function (tokens: MarkdownItContainerTokenType[], idx: number) {
+    const m = tokens[idx].info.split(" ");
+    if (tokens[idx].nesting === 1) {
+      return `<details class="custom-container custom-container-details"><summary class="custom-container-title">${
+        m.length > 2 ? this.md.utils.escapeHtml(m[2]) : "详情"
+      }</summary>\n`;
+    } else {
+      return "</details>\n";
+    }
+  },
+});
+
+// 禁止将电子邮件转换为链接
+md.linkify.set({ fuzzyEmail: false });
+
+const envNunjucks = nunjucks.configure({ 
+  autoescape: true,
+  noCache: true,
+  throwOnUndefined: false,
+  trimBlocks: true, 
+  lstripBlocks: true
+});
+
 /**
  * DocuPress静态站点生成器
  */
 class DocuPress {
   static instance: DocuPress | null = null;
   #config: ConfigPage = defaultConfig;
-  #md: MarkdownIt | null = null;
 
   constructor(config?: ConfigPage) {
     this.#config = { ...this.#config, ...config };
@@ -59,181 +230,7 @@ class DocuPress {
   /**
    * 初始化MarkdownIt
    */
-  #initMarkdownIt() {
-    const alertTitleMap: Record<string, string> = {
-      info: "信息",
-      note: "注",
-      warning: "警告",
-      tip: "提示",
-      danger: "危险",
-      details: "详情",
-      caution: "危险",
-      important: "重要",
-    };
-    /**
-     * 添加自定义容器
-     */
-    const addCustomContainer = (
-      md: MarkdownIt,
-      container: { name: string; title: string }[]
-    ) => {
-      container.forEach((item) => {
-        md.use(markdownitcontainer, item.name, {
-          render: function (
-            tokens: MarkdownItContainerTokenType[],
-            idx: number
-          ) {
-            const m = tokens[idx].info.split(" ");
-            if (tokens[idx].nesting === 1) {
-              return `<div class="custom-container custom-container-${
-                item.name
-              }"><div class="custom-container-title">${
-                m.length > 2 ? md.utils.escapeHtml(m[2]) : item.title
-              }</div>\n`;
-            } else {
-              return "</div>\n";
-            }
-          },
-        });
-      });
-    };
-    // 代码行高亮
-    const codeHighlightedTransformer: ShikiTransformer = {
-      name: "codeHighlightedTransformer",
-      code(node) {
-        if (node.children.length > 0) {
-          if (
-            (
-              node.children[node.children.length - 1] as {
-                children: { type: string; value: string }[];
-              }
-            ).children.length === 0
-          ) {
-            node.children.pop();
-          }
-        }
-      },
-    };
-    this.#md = MarkdownItAsync({
-      html: true, // 可以识别html
-      xhtmlOut: true,
-      breaks: true, // 回车换行
-      langPrefix: "language-",
-      linkify: true, // 自动检测链接文本
-      typographer: true, // 优化排版，标点
-      quotes: "“”‘’",
-      async highlight(code, lang) {
-        const html = await codeToHtml(code, {
-          lang: lang,
-          themes: {
-            dark: "min-dark",
-            light: "min-light",
-          },
-          defaultColor: false,
-          transformers: [
-            codeHighlightedTransformer,
-            transformerNotationDiff(),
-            transformerNotationHighlight(),
-            transformerNotationWordHighlight(),
-            transformerNotationFocus(),
-            transformerNotationErrorLevel(),
-            transformerMetaHighlight(),
-            transformerRenderWhitespace(),
-            transformerMetaWordHighlight(),
-            transformerRemoveNotationEscape(),
-          ],
-        });
-        return html;
-      },
-    })
-      .use(markdownitsub) // 下标
-      .use(markdownitalert, {
-        deep: true,
-        titleRender: (tokens, idx) => {
-          const token = tokens[idx];
-          const content = token.content.trim();
-          return `<div class="markdown-alert-title">${
-            alertTitleMap[content] || content
-          }</div>`;
-        },
-      }) // GFM 风格的警告
-      .use(markdownitsup) // 上标
-      .use(markdownitfootnote) // 脚注
-      .use(markdownitdeflist) // 定义列表
-      .use(markdownitabbr) // 缩写
-      .use(markdownitemoji) // 表情
-      .use(markdownitins) // 插入
-      .use(markdownitmark) // 标记
-      .use(markdownitfigure) // 标题图片
-      .use(markdownitanchor, {
-        permalink: markdownitanchor.permalink.headerLink({
-          safariReaderFix: true,
-          class: "header-anchor",
-        }),
-      }) // 标题锚点
-      .use(markdownitImgLazyload) // 图片懒加载
-      .use(imgSize) // 新格式 图片尺寸
-      .use(obsidianImgSize) // Obsidian 格式 图片尺寸
-      .use(markdownitkatex) // 公式
-      .use(markdownitplantuml) // uml
-      .use(markdownitruby) // ruby拼音
-      .use(markdownitspoiler) // 隐藏内容
-      .use(markdownittasklist) // 任务列表
-      .use(markdownittocdoneright, {
-        containerClass: "article-outline-of-contents",
-        linkClass: "article-outline-link",
-      }) // 目录
-      .use(markdownitattrs, {
-        leftDelimiter: "{",
-        rightDelimiter: "}",
-        allowedAttributes: [
-          "id",
-          "class",
-          "style",
-          "data-*",
-          "title",
-          "target",
-        ], // 为空数组时支持所有属性，当然这是不安全的
-      }) // 属性{}
-      .use(apiDocuPlugin) // 接口文档
-      .use(chartPlugin); // 图表
-
-    // 添加自定义容器
-    addCustomContainer(this.#md, [
-      {
-        name: "info",
-        title: "信息",
-      },
-      {
-        name: "tip",
-        title: "提示",
-      },
-      {
-        name: "warning",
-        title: "警告",
-      },
-      {
-        name: "danger",
-        title: "危险",
-      },
-    ]);
-
-    this.#md.use(markdownitcontainer, "details", {
-      render: function (tokens: MarkdownItContainerTokenType[], idx: number) {
-        const m = tokens[idx].info.split(" ");
-        if (tokens[idx].nesting === 1) {
-          return `<details class="custom-container custom-container-details"><summary class="custom-container-title">${
-            m.length > 2 ? this.#md.utils.escapeHtml(m[2]) : "详情"
-          }</summary>\n`;
-        } else {
-          return "</details>\n";
-        }
-      },
-    });
-
-    // 禁止将电子邮件转换为链接
-    this.#md.linkify.set({ fuzzyEmail: false });
-  }
+  #initMarkdownIt() {}
 
   /**
    * 设置配置
@@ -247,7 +244,7 @@ class DocuPress {
    * 解析Markdown文本顶部的yaml数据
    * @param text Markdown文本
    */
-  parseYaml(text: string): { data: any; content: string } {
+  parseYaml(text: string): { data: ConfigPage; content: string } {
     return matter(text);
   }
 
@@ -268,20 +265,34 @@ class DocuPress {
     }</h1>\n\n${text}\n\n<footer class="article-footer"><div class="article-info"></div><nav></nav></footer></article><div class="article-outline-content"><div class="article-outline-title">${
       config.outline?.label
     }</div>\n\n[toc]\n\n</div>`;
-    return await this.#md?.renderAsync(text);
+    return await md.renderAsync(text);
   }
 
   /**
    * 渲染模版
-   * @returns HTML串
+   * @param src 文件
+   * @param config 配置
    */
-  renderTemplate(template: string, config?: ConfigPage):string {
+  render(src: string, config: ConfigPage): string {
     if (config) {
       config = { ...this.#config, ...config };
     } else {
       config = this.#config;
     }
-    return nunjucks.renderString(template,config);
+    return envNunjucks.render(src, config);
+  }
+
+  /**
+   * 渲染字符串
+   * @returns HTML串
+   */
+  renderTemplate(template: string, config?: ConfigPage): string {
+    if (config) {
+      config = { ...this.#config, ...config };
+    } else {
+      config = this.#config;
+    }
+    return envNunjucks.renderString(template, config);
   }
 
   /**
