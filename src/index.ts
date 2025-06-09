@@ -275,13 +275,13 @@ class DocuPress {
    * 渲染模版
    * @returns HTML串
    */
-  renderTemplate(template: string, config?: ConfigPage) {
+  renderTemplate(template: string, config?: ConfigPage):string {
     if (config) {
       config = { ...this.#config, ...config };
     } else {
       config = this.#config;
     }
-    nunjucks.renderString(template,config);
+    return nunjucks.renderString(template,config);
   }
 
   /**

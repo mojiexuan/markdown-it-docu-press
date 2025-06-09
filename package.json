@@ -1,6 +1,6 @@
 {
   "name": "markdown-it-docu-press",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "静态站点生成器",
   "type": "module",
   "license": "ISC",
