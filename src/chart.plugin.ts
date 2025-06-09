@@ -1,8 +1,7 @@
 import { MarkdownItAsync as MarkdownIt } from "markdown-it-async";
 import StateBlock from "markdown-it/lib/rules_block/state_block.mjs";
 import JSON5 from "json5";
-
-const echarts = require("echarts");
+import * as echarts from "echarts";
 
 interface MarkdownItPluginOptions {
   className?: string;
@@ -69,7 +68,7 @@ function renderChart(chartData: any): string {
  * @param theme 主题，默认null为亮
  */
 function createSvgString(width: number,height:number,chartData: any, theme: "dark" | null = null):  string { 
-  let chart = echarts.init(null,theme,{
+  let chart:echarts.EChartsType | null = echarts.init(null,theme,{
     renderer: 'svg',
     ssr:true,
     width: width,
