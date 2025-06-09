@@ -1,0 +1,75 @@
+{
+  "name": "markdown-it-docu-press",
+  "version": "1.0.0",
+  "description": "静态站点生成器",
+  "type": "module",
+  "license": "ISC",
+  "author": "陈佳宝 mail@chenjiabao.com",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/esm/index.d.ts",
+  "keywords": [
+    "DocuPress",
+    "markdown-it",
+    "markdown-it-plugin",
+    "markdown"
+  ],
+  "homepage": "",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
+  },
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/echarts": "^5.0.0",
+    "@types/markdown-it": "^14.1.2",
+    "@types/markdown-it-attrs": "^4.1.3",
+    "@types/node": "^22.15.30",
+    "rollup": "^4.42.0"
+  },
+  "dependencies": {
+    "@mdit/plugin-alert": "^0.21.0",
+    "@mdit/plugin-figure": "^0.21.0",
+    "@mdit/plugin-img-lazyload": "^0.21.0",
+    "@mdit/plugin-img-size": "^0.21.0",
+    "@mdit/plugin-katex": "^0.21.0",
+    "@mdit/plugin-plantuml": "^0.21.0",
+    "@mdit/plugin-ruby": "^0.21.0",
+    "@mdit/plugin-spoiler": "^0.21.0",
+    "@mdit/plugin-tasklist": "^0.21.0",
+    "@shikijs/transformers": "^3.5.0",
+    "echarts": "^5.6.0",
+    "gray-matter": "^4.0.3",
+    "highlight.js": "^11.11.1",
+    "json5": "^2.2.3",
+    "markdown-it-abbr": "^2.0.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-async": "^2.2.0",
+    "markdown-it-attrs": "^4.3.1",
+    "markdown-it-container": "^4.0.0",
+    "markdown-it-deflist": "^3.0.0",
+    "markdown-it-emoji": "^3.0.0",
+    "markdown-it-footnote": "^4.0.0",
+    "markdown-it-ins": "^4.0.0",
+    "markdown-it-mark": "^4.0.0",
+    "markdown-it-sub": "^2.0.0",
+    "markdown-it-sup": "^2.0.0",
+    "markdown-it-toc-done-right": "^4.2.0",
+    "shiki": "^3.5.0"
+  }
+}

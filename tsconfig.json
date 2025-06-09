@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "Node",
+        "declaration": true, // 生成 .d.ts 类型声明
+        "outDir": "./dist/esm", // ESM 输出目录
+        "rootDir": "./src",
+        "strict": true,
+        "esModuleInterop": true,
+        "types": ["node"]
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "test"
+    ]
+}
