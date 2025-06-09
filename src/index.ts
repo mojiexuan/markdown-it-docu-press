@@ -247,7 +247,7 @@ class DocuPress {
    * 解析Markdown文本顶部的yaml数据
    * @param text Markdown文本
    */
-  parseYaml(text: string): { data: any; content: string } | null {
+  parseYaml(text: string): { data: any; content: string } {
     return matter(text);
   }
 
