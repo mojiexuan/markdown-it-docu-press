@@ -224,13 +224,7 @@ class DocuPress {
 
   constructor(config?: ConfigPage) {
     this.#config = { ...this.#config, ...config };
-    this.#initMarkdownIt();
   }
-
-  /**
-   * 初始化MarkdownIt
-   */
-  #initMarkdownIt() {}
 
   /**
    * 设置配置
@@ -273,7 +267,7 @@ class DocuPress {
    * @param src 文件
    * @param config 配置
    */
-  render(src: string, config: ConfigPage): string {
+  render(src: string, config?: ConfigPage): string {
     if (config) {
       config = { ...this.#config, ...config };
     } else {

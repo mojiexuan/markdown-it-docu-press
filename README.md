@@ -1,4 +1,4 @@
 # markdown-it-docu-press
 
-整合了
+请参阅[DocuPress](https://doc.chenjiabao.com){target="_blank"}
 
